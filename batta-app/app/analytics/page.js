@@ -74,9 +74,10 @@ export default function AnalyticsDashboard() {
         // 4. Sales & God Mode (Summing from orders data)
         if (ordersRes.status === 'fulfilled' && Array.isArray(ordersRes.value)) {
           const revenue = ordersRes.value.reduce((sum, order) => sum + Number(order.paid_amount || 0), 0);
-          const active = ordersRes.value.filter(o => o.status === 'Pending' || o.status === 'Active').length;
+          const completed = ordersRes.value.filter(o => ['Completed', 'Closed', 'Force Closed', 'Done'].includes(o.status)).length;
+          const active = ordersRes.value.filter(o => ['Active', 'Pending'].includes(o.status)).length;
           
-          setSalesStats({ total_revenue: revenue, total_orders: ordersRes.value.length, active_orders: active });
+          setSalesStats(prev => ({ ...prev, total_revenue: revenue, total_orders: completed, active_orders: active }));
           
           // Set God Mode Data
           setData({ total_revenue: revenue, net_profit: revenue - (Number(fuelRes.value?.total_consumed || 0) * 80) }); // basic profit est
@@ -157,8 +158,8 @@ export default function AnalyticsDashboard() {
       tag: "Sales",
       tagColor: "bg-rose-500/20 text-rose-300",
       stats: [
-        { label: "Revenue", value: isLoading ? "—" : `₹${formatK(salesStats?.total_revenue || 0)}` },
-        { label: "Orders", value: isLoading ? "—" : (salesStats?.total_orders || 0) },
+        { label: "Revenue This Week", value: isLoading ? "—" : `₹${formatK(salesStats?.total_revenue || 0)}` },
+        { label: "Completed Orders", value: isLoading ? "—" : (salesStats?.total_orders || 0) },
         { label: "Active", value: isLoading ? "—" : (salesStats?.active_orders || 0) },
       ],
     },
