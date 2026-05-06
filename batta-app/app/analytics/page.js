@@ -53,16 +53,18 @@ export default function AnalyticsDashboard() {
 
         // 3. Payroll (Summing from employee data & ledgers)
         if (empRes.status === 'fulfilled' && Array.isArray(empRes.value)) {
-          const totalAdvances = empRes.value.reduce((sum, emp) => sum + (emp.advance_balance || 0), 0);
-          const totalPending = empRes.value.reduce((sum, emp) => sum + (emp.pending_dues || 0), 0);
-          
           const ledgerPromises = empRes.value.map(emp => getPayrollLedger(emp.id).catch(() => []));
           const allLedgers = await Promise.all(ledgerPromises);
           
           let totalPaid = 0;
+          let totalAdvances = 0;
+          let totalPending = 0;
+          
           allLedgers.forEach(empLedger => {
             if (Array.isArray(empLedger)) {
               totalPaid += empLedger.reduce((sum, l) => sum + Number(l.amount || 0), 0);
+              totalAdvances += empLedger.filter(l => l.transaction_type === "ADVANCE_GIVEN").reduce((sum, l) => sum + Number(l.amount || 0), 0);
+              totalPending += empLedger.filter(l => l.transaction_type === "SALARY" && Number(l.due_created) > 0).reduce((sum, l) => sum + Number(l.due_created || 0), 0);
             }
           });
 
@@ -71,13 +73,13 @@ export default function AnalyticsDashboard() {
 
         // 4. Sales & God Mode (Summing from orders data)
         if (ordersRes.status === 'fulfilled' && Array.isArray(ordersRes.value)) {
-          const revenue = ordersRes.value.reduce((sum, order) => sum + (order.total_amount || 0), 0);
+          const revenue = ordersRes.value.reduce((sum, order) => sum + Number(order.paid_amount || 0), 0);
           const active = ordersRes.value.filter(o => o.status === 'Pending' || o.status === 'Active').length;
           
           setSalesStats({ total_revenue: revenue, total_orders: ordersRes.value.length, active_orders: active });
           
           // Set God Mode Data
-          setData({ total_revenue: revenue, net_profit: revenue - (fuelRes.value?.total_consumed || 0 * 80) }); // basic profit est
+          setData({ total_revenue: revenue, net_profit: revenue - (Number(fuelRes.value?.total_consumed || 0) * 80) }); // basic profit est
         }
       } catch (error) {
         console.error("Dashboard calculation error:", error);

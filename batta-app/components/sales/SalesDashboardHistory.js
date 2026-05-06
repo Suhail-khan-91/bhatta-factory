@@ -42,20 +42,20 @@ export default function SalesDashboardHistory({ onBack }) {
 
   const filteredByTime = useMemo(() => filterByRange(orders, timeRange), [orders, timeRange]);
 
-  const totalRevenue      = filteredByTime.reduce((s, o) => s + Number(o.total_amount), 0);
-  const totalBricks       = filteredByTime.reduce((s, o) => s + (o.order_mode === "trawli" ? o.total_qty * 2000 : o.total_qty), 0);
-  const totalTrawlis      = filteredByTime.filter(o => o.order_mode === "trawli").reduce((s, o) => s + o.total_qty, 0);
+  const totalRevenue      = filteredByTime.reduce((s, o) => s + Number(o.paid_amount || 0), 0);
+  const totalBricks       = filteredByTime.reduce((s, o) => s + (o.order_mode === "trawli" ? Number(o.dispatched_qty || 0) * 2000 : Number(o.dispatched_qty || 0)), 0);
+  const totalTrawlis      = filteredByTime.filter(o => o.order_mode === "trawli").reduce((s, o) => s + Number(o.dispatched_qty || 0), 0);
   const activeOrdersCount = orders.filter(o => o.status === "Active").length;
 
   const leadSourceMap = filteredByTime.reduce((acc, o) => {
     const src = o.lead_source || "Direct";
-    acc[src] = (acc[src] || 0) + Number(o.total_amount);
+    acc[src] = (acc[src] || 0) + Number(o.paid_amount || 0);
     return acc;
   }, {});
   const maxLeadVal = Math.max(...Object.values(leadSourceMap), 1);
 
   const revByDate = filteredByTime.reduce((acc, o) => {
-    acc[o.order_date] = (acc[o.order_date] || 0) + Number(o.total_amount);
+    acc[o.order_date] = (acc[o.order_date] || 0) + Number(o.paid_amount || 0);
     return acc;
   }, {});
   const sortedDates = Object.keys(revByDate).sort();
