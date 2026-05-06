@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Calculator, PlusSquare, BarChart2, Wallet, Truck, MoreVertical } from "lucide-react";
@@ -43,6 +44,7 @@ function fireLoginEvent() {
 
 export default function BottomNavBar() {
   const pathname = usePathname();
+  const router = useRouter();
   const isHome = pathname === "/";
   const [showMenu, setShowMenu] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
@@ -73,6 +75,16 @@ export default function BottomNavBar() {
                 className="w-full text-left px-4 py-3 text-sm text-gray-200 hover:bg-gray-700 transition-colors"
               >
                 Admin Panel
+              </button>
+              <button
+                onClick={async () => {
+                  setShowMenu(false);
+                  await fetch('/api/auth/logout', { method: 'POST' });
+                  router.push('/');
+                }}
+                className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-gray-700 transition-colors border-t border-gray-700"
+              >
+                Logout
               </button>
             </div>
           )}

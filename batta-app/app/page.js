@@ -85,7 +85,7 @@ export default function Home() {
           "
         >
           <LogIn size={16} strokeWidth={2.2} />
-          Sign In
+          Login
         </button>
       </div>
 

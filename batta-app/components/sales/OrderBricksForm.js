@@ -296,7 +296,17 @@ export default function OrderBricksForm({ onBack }) {
             <input type="text" placeholder="Full name" value={form.customerName} onChange={set("customerName")} className={inp} />
           </Field>
           <Field label="Mobile Number">
-            <input type="tel" inputMode="tel" placeholder="+91 XXXXX XXXXX" value={form.customerMobile} onChange={set("customerMobile")} className={inp} />
+            <input
+              type="tel"
+              inputMode="numeric"
+              placeholder="+91 XXXXX XXXXX"
+              value={form.customerMobile}
+              onChange={(e) => {
+                const sanitizedValue = e.target.value.replace(/[^0-9+]/g, '');
+                setForm({ ...form, customerMobile: sanitizedValue });
+              }}
+              className={inp}
+            />
           </Field>
           <Field label="Delivery Address">
             <textarea rows={2} placeholder="Village / town / landmark" value={form.customerAddress} onChange={set("customerAddress")} className={`${inp} resize-none`} />
