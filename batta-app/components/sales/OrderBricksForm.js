@@ -10,8 +10,8 @@ import { jsPDF } from "jspdf";
 const today = new Date().toISOString().split("T")[0];
 
 const SECTION = ({ icon: Icon, title, accent, children }) => (
-  <div className="rounded-2xl bg-gray-800/70 border border-gray-700/50 overflow-hidden mb-4">
-    <div className={`flex items-center gap-2.5 px-4 py-3 bg-gradient-to-r ${accent} border-b border-white/10`}>
+  <div className="rounded-2xl bg-gray-800/70 border border-gray-700/50 mb-4">
+    <div className={`flex items-center gap-2.5 px-4 py-3 bg-gradient-to-r ${accent} border-b border-white/10 rounded-t-2xl`}>
       <Icon size={16} className="text-white/80" />
       <span className="text-white font-semibold text-sm tracking-wide uppercase">{title}</span>
     </div>
@@ -24,6 +24,14 @@ const Field = ({ label, hint, children }) => (
     <label className="text-gray-400 text-xs font-medium uppercase tracking-wider">{label}</label>
     {children}
     {hint && <p className="text-gray-500 text-xs mt-0.5">{hint}</p>}
+  </div>
+);
+
+const CustomDropdown = ({ label, options, value, onChange, placeholder, zIndex = "z-50" }) => (
+  <div className={`relative ${zIndex}`}>
+    <Field label={label}>
+      <Combobox id={label.replace(/\s+/g, '')} options={options} value={value} onChange={onChange} placeholder={placeholder} />
+    </Field>
   </div>
 );
 
@@ -232,7 +240,7 @@ export default function OrderBricksForm({ onBack }) {
         </button>
       </div>
 
-      <div className="flex-1 px-4 py-4 pb-8 overflow-y-auto">
+      <div className="flex-1 px-4 py-4 pb-48 overflow-y-auto">
         {activeTab === 'new_order' && (
           <>
             <SECTION icon={User} title="Customer Details" accent="from-sky-600/80 to-blue-700/80">
@@ -248,12 +256,8 @@ export default function OrderBricksForm({ onBack }) {
         </SECTION>
 
         <SECTION icon={ClipboardList} title="Internal / Sales Details" accent="from-violet-600/80 to-purple-700/80">
-          <Field label="Lead Source">
-            <Combobox id="leadSource" options={settings.lead_sources} value={form.leadSource} onChange={set("leadSource")} placeholder="Search or type name…" />
-          </Field>
-          <Field label="Salesperson">
-            <Combobox id="salesperson" options={settings.salespersons} value={form.salesperson} onChange={set("salesperson")} placeholder="Search or type name…" />
-          </Field>
+          <CustomDropdown label="Lead Source" options={settings.lead_sources} value={form.leadSource} onChange={set("leadSource")} placeholder="Search or type name…" zIndex="z-[60]" />
+          <CustomDropdown label="Salesperson" options={settings.salespersons} value={form.salesperson} onChange={set("salesperson")} placeholder="Search or type name…" zIndex="z-50" />
         </SECTION>
 
         <SECTION icon={ShoppingCart} title="Order Details" accent="from-orange-600/80 to-red-700/80">
@@ -280,11 +284,7 @@ export default function OrderBricksForm({ onBack }) {
               <input type="number" inputMode="numeric" placeholder="e.g. 1000" value={form.bricksQty} onChange={set("bricksQty")} className={inp} />
             </Field>
           )}
-          <Field label="Brick Category">
-            <select value={form.brickCategory} onChange={set("brickCategory")} className={sel}>
-              {settings.brick_categories.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </Field>
+          <CustomDropdown label="Brick Category" options={settings.brick_categories} value={form.brickCategory} onChange={set("brickCategory")} placeholder="Select category…" zIndex="z-40" />
         </SECTION>
 
         <SECTION icon={IndianRupee} title="Financials" accent="from-emerald-600/80 to-teal-700/80">
@@ -306,13 +306,7 @@ export default function OrderBricksForm({ onBack }) {
               <input type="number" inputMode="numeric" placeholder="e.g. 7000" value={form.customTotalAmount} onChange={set("customTotalAmount")} className={`${inp} text-xl font-bold`} />
             </Field>
           )}
-          <Field label="Payment Status">
-            <select value={form.paymentStatus} onChange={set("paymentStatus")} className={sel}>
-              <option>Full Payment</option>
-              <option>Partial Advance</option>
-              <option>Pending/Udhaar</option>
-            </select>
-          </Field>
+          <CustomDropdown label="Payment Status" options={["Full Payment", "Partial Advance", "Pending/Udhaar"]} value={form.paymentStatus} onChange={set("paymentStatus")} placeholder="Select status…" zIndex="z-30" />
           {showPaymentFields && (
             <>
               <Field label="Amount Paid (₹)">
