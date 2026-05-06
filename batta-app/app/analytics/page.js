@@ -6,7 +6,7 @@ import FuelAnalyticsDashboard from "../../components/analytics/FuelAnalyticsDash
 import ProductionAnalyticsDashboard from "../../components/analytics/ProductionAnalyticsDashboard";
 import HistoryStatsDashboard from "../../components/payroll/HistoryStatsDashboard";
 import SalesDashboardHistory from "../../components/sales/SalesDashboardHistory";
-import { Fuel, Pickaxe, IndianRupee, TrendingUp, Zap, ChevronRight, LayoutDashboard, Layers, Wallet, ShoppingCart } from "lucide-react";
+import { Fuel, Pickaxe, IndianRupee, TrendingUp, Zap, ChevronRight, LayoutDashboard, Layers, Wallet, ShoppingCart, ArrowLeft } from "lucide-react";
 
 export default function AnalyticsDashboard() {
   const [currentView, setCurrentView] = useState('menu');
@@ -245,20 +245,32 @@ export default function AnalyticsDashboard() {
       );
     }
 
-    const totalExpenses = data.total_payroll + data.total_fuel_cost;
-    const payrollRatio = totalExpenses > 0 ? (data.total_payroll / totalExpenses) * 100 : 0;
-    const fuelRatio = totalExpenses > 0 ? (data.total_fuel_cost / totalExpenses) * 100 : 0;
+    const rawBrickCost = (bricksStats?.month || bricksStats?.today || 0) * 0.5;
+    const payrollCost = payrollStats?.total_paid || 0;
+    const fuelCost = (fuelStats?.total_consumed || 0) * 87;
+    const totalExpenses = rawBrickCost + payrollCost + fuelCost;
+    const calculatedProfit = (data?.total_revenue || 0) - totalExpenses;
+
+    const payrollRatio = totalExpenses > 0 ? (payrollCost / totalExpenses) * 100 : 0;
+    const fuelRatio = totalExpenses > 0 ? (fuelCost / totalExpenses) * 100 : 0;
+    const rawBrickRatio = totalExpenses > 0 ? (rawBrickCost / totalExpenses) * 100 : 0;
+    
     const drivers = data?.top_drivers || [];
     const maxDriverCount = drivers.length > 0 ? Math.max(...drivers.map(d => d.count)) : 1;
 
     return (
       <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-900 text-white">
-        <button onClick={() => setCurrentView('menu')} className="text-gray-400 hover:text-gray-200 mb-6 flex items-center transition-colors">
-          ← Back to Menu
-        </button>
-        <h1 className="text-3xl font-extrabold text-white mb-8 tracking-tight flex items-center gap-2">
-          Factory God Mode <Zap size={24} className="text-indigo-400" />
-        </h1>
+        <div className="flex items-center mb-8">
+          <button onClick={() => setCurrentView('menu')} className="p-2 mr-3 hover:bg-gray-800 rounded-full text-gray-400 transition-colors">
+            <ArrowLeft size={24} />
+          </button>
+          <div>
+            <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
+              Factory God Mode <Zap size={24} className="text-indigo-400" />
+            </h1>
+            <p className="text-gray-400 text-sm mt-1">High-level financial overview</p>
+          </div>
+        </div>
 
         {/* Top Row: 3 Big Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
@@ -269,13 +281,13 @@ export default function AnalyticsDashboard() {
 
           <div className="bg-gray-800 rounded-2xl shadow-md border border-gray-700 p-6 flex flex-col justify-center">
             <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-2">Total Expenses</h2>
-            <p className="text-4xl font-bold text-red-500">{formatCurrency(totalExpenses)}</p>
-            <div className="text-xs text-gray-500 mt-2">Payroll + Fuel</div>
+            <p className="text-4xl font-bold text-red-500">₹{formatK(totalExpenses)}</p>
+            <div className="text-xs text-gray-500 mt-2">Payroll + Fuel + Raw Bricks</div>
           </div>
 
           <div className="bg-gradient-to-br from-blue-600 to-purple-700 rounded-2xl shadow-lg p-6 flex flex-col justify-center text-white border border-blue-500/30">
             <h2 className="text-sm font-medium text-blue-100 uppercase tracking-wider mb-2">Estimated Net Profit</h2>
-            <p className="text-5xl font-extrabold">{formatCurrency(data.net_profit)}</p>
+            <p className="text-5xl font-extrabold">₹{formatK(calculatedProfit)}</p>
             <div className="text-xs text-blue-200 mt-2">Revenue - Expenses</div>
           </div>
         </div>
@@ -286,41 +298,46 @@ export default function AnalyticsDashboard() {
           <div className="bg-gray-800 rounded-2xl shadow-md border border-gray-700 p-6">
             <h3 className="text-xl font-bold text-gray-100 mb-6">Expense Breakdown</h3>
             
-            {totalExpenses > 0 ? (
-              <div className="space-y-6">
-                <div className="w-full h-8 flex rounded-full overflow-hidden shadow-inner bg-gray-700">
-                  <div 
-                    className="h-full bg-emerald-500 flex items-center justify-center text-xs text-white font-bold transition-all duration-500" 
-                    style={{ width: `${payrollRatio}%` }}
-                    title={`Payroll: ${formatCurrency(data.total_payroll)}`}
-                  >
-                    {payrollRatio > 10 && `${payrollRatio.toFixed(0)}%`}
-                  </div>
-                  <div 
-                    className="h-full bg-blue-500 flex items-center justify-center text-xs text-white font-bold transition-all duration-500" 
-                    style={{ width: `${fuelRatio}%` }}
-                    title={`Fuel: ${formatCurrency(data.total_fuel_cost)}`}
-                  >
-                    {fuelRatio > 10 && `${fuelRatio.toFixed(0)}%`}
-                  </div>
+            <div className="space-y-6">
+              <div className="w-full h-8 flex rounded-full overflow-hidden shadow-inner bg-gray-700">
+                <div 
+                  className="h-full bg-emerald-500 flex items-center justify-center text-xs text-white font-bold transition-all duration-500" 
+                  style={{ width: `${payrollRatio}%` }}
+                  title={`Payroll: ₹${formatK(payrollCost)}`}
+                >
+                  {payrollRatio > 10 && `${payrollRatio.toFixed(0)}%`}
                 </div>
-                
-                <div className="flex justify-between text-sm">
-                  <div className="flex items-center space-x-2">
-                    <span className="w-4 h-4 rounded-full bg-emerald-500 inline-block"></span>
-                    <span className="text-gray-300 font-medium">Payroll</span>
-                    <span className="text-gray-500">({formatK(data.total_payroll)})</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="w-4 h-4 rounded-full bg-blue-500 inline-block"></span>
-                    <span className="text-gray-300 font-medium">Fuel</span>
-                    <span className="text-gray-500">({formatK(data.total_fuel_cost)})</span>
-                  </div>
+                <div 
+                  className="h-full bg-blue-500 flex items-center justify-center text-xs text-white font-bold transition-all duration-500" 
+                  style={{ width: `${fuelRatio}%` }}
+                  title={`Fuel: ₹${formatK(fuelCost)}`}
+                >
+                  {fuelRatio > 10 && `${fuelRatio.toFixed(0)}%`}
+                </div>
+                <div 
+                  className="h-full bg-amber-500 flex items-center justify-center text-xs text-white font-bold transition-all duration-500" 
+                  style={{ width: `${rawBrickRatio}%` }}
+                  title={`Raw Bricks: ₹${formatK(rawBrickCost)}`}
+                >
+                  {rawBrickRatio > 10 && `${rawBrickRatio.toFixed(0)}%`}
                 </div>
               </div>
-            ) : (
-              <p className="text-gray-500 italic">No expenses recorded yet.</p>
-            )}
+              
+              <ul className="space-y-3 mt-4">
+                <li className="flex justify-between text-gray-300 text-sm">
+                  <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-emerald-500"></span>Payroll</div>
+                  <span className="font-bold text-white">₹{formatK(payrollCost)}</span>
+                </li>
+                <li className="flex justify-between text-gray-300 text-sm">
+                  <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-blue-500"></span>Fuel (₹87/L)</div>
+                  <span className="font-bold text-white">₹{formatK(fuelCost)}</span>
+                </li>
+                <li className="flex justify-between text-gray-300 text-sm">
+                  <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-amber-500"></span>Raw Bricks (₹0.5/pc)</div>
+                  <span className="font-bold text-white">₹{formatK(rawBrickCost)}</span>
+                </li>
+              </ul>
+            </div>
           </div>
 
           <div className="bg-gray-800 rounded-2xl shadow-md border border-gray-700 p-6">
