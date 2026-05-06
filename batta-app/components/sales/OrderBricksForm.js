@@ -170,11 +170,17 @@ export default function OrderBricksForm({ onBack }) {
         console.warn("Watermark skipped:", imgErr);
       }
 
-      if (watermarkDataUrl) {
-        doc.setGState(new doc.GState({ opacity: 0.25 }));
-        doc.addImage(watermarkDataUrl, 'JPEG', 0, 0, 210, 297);
-        doc.setGState(new doc.GState({ opacity: 1.0 }));
-      }
+      // ── Watermark helper (called for every new page) ─────────────────
+      const applyWatermark = () => {
+        if (watermarkDataUrl) {
+          doc.setGState(new doc.GState({ opacity: 0.28 }));
+          doc.addImage(watermarkDataUrl, 'JPEG', 0, 0, 210, 297);
+          doc.setGState(new doc.GState({ opacity: 1.0 }));
+        }
+      };
+
+      // Apply to page 1
+      applyWatermark();
 
       // Header
       doc.setFontSize(16);
@@ -201,72 +207,99 @@ export default function OrderBricksForm({ onBack }) {
       doc.text("Address: Daldi, Bhadni Chafa UP", 105, currentY, { align: "center" });
       currentY += 6;
 
-      // Horizontal Line
+      // ── Layout constants ──────────────────────────────────────────────
+      const leftX        = 35;   // label X
+      const rightX       = 135;  // value X
+      const rightMaxW    = 60;   // max width of right-column text (mm)
+      const lineH        = 6;    // height per line of text (mm)
+      const rowPad       = 4;    // extra padding after each row (mm)
+
+      // Helper: add page if we're close to the bottom
+      const checkPage = () => {
+        if (currentY > 265) { doc.addPage(); applyWatermark(); currentY = 20; }
+      };
+
+      // Helper: print a 2-column row with dynamic wrapping, returns nothing
+      const row = (label, value) => {
+        const lines = doc.splitTextToSize(String(value || 'N/A'), rightMaxW);
+        doc.text(label, leftX, currentY);
+        doc.text(lines, rightX, currentY);
+        currentY += (lines.length * lineH) + rowPad;
+      };
+
+      // ── Horizontal Line ───────────────────────────────────────────────
+      checkPage();
       doc.line(15, currentY, 195, currentY);
       currentY += 11;
 
-      // Customer Info
+      // ── Customer Details ──────────────────────────────────────────────
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
-      doc.text("Customer Details:", 35, currentY);
+      doc.text("Customer Details:", leftX, currentY);
       doc.setFont("helvetica", "normal");
       currentY += 10;
-      doc.text("Name:", 35, currentY); doc.text(order.customer_name || 'N/A', 140, currentY);
-      currentY += 8;
-      doc.text("Mobile:", 35, currentY); doc.text(order.customer_mobile || 'N/A', 140, currentY);
-      currentY += 8;
-      doc.text("Address:", 35, currentY); doc.text(order.customer_address || 'N/A', 140, currentY);
-      currentY += 8;
-      doc.text("Date:", 35, currentY); doc.text(order.order_date || 'N/A', 140, currentY);
-      currentY += 6;
 
-      // Horizontal Line
+      row("Name:",    order.customer_name);
+      row("Mobile:",  order.customer_mobile);
+      row("Address:", order.customer_address);
+      row("Date:",    order.order_date);
+      currentY += 2; // small extra gap before next line
+
+      // ── Horizontal Line ───────────────────────────────────────────────
+      checkPage();
       doc.line(15, currentY, 195, currentY);
       currentY += 12;
 
-      // Order Info
+      // ── Order Details ─────────────────────────────────────────────────
       doc.setFont("helvetica", "bold");
-      doc.text("Order Details:", 35, currentY);
+      doc.text("Order Details:", leftX, currentY);
       doc.setFont("helvetica", "normal");
       currentY += 10;
-      doc.text("Brick Type:", 35, currentY); doc.text(order.brick_category || 'N/A', 140, currentY);
-      currentY += 8;
 
-      const qtyText = order.order_mode === 'trawli' ? `${order.total_qty} Trawli(s)` : `${order.total_qty} Bricks`;
-      doc.text("Quantity:", 35, currentY); doc.text(qtyText, 140, currentY);
-      currentY += 8;
+      row("Brick Type:", order.brick_category);
+
+      const qtyText = order.order_mode === 'trawli'
+        ? `${order.total_qty} Trawli(s)`
+        : `${order.total_qty} Bricks`;
+      row("Quantity:", qtyText);
 
       if (order.order_mode === 'trawli') {
-        doc.text("Fixed Trawli Rate:", 35, currentY); doc.text(`Rs. ${Number(pricePerTrawli).toLocaleString('en-IN')}`, 140, currentY);
-        currentY += 8;
-        doc.text("Sold Trawli Rate:", 35, currentY); doc.text(`Rs. ${Number(order.price_per_trawli).toLocaleString('en-IN')}`, 140, currentY);
-        currentY += 8;
+        row("Fixed Trawli Rate:", `Rs. ${Number(pricePerTrawli).toLocaleString('en-IN')}`);
+        row("Sold Trawli Rate:",  `Rs. ${Number(order.price_per_trawli).toLocaleString('en-IN')}`);
       }
 
-      // Horizontal Line
+      // ── Horizontal Line ───────────────────────────────────────────────
+      checkPage();
       doc.line(15, currentY + 2, 195, currentY + 2);
       currentY += 15;
 
-      // Financials
+      // ── Financial Summary ─────────────────────────────────────────────
+      checkPage();
       doc.setFont("helvetica", "bold");
-      doc.text("Financial Summary:", 35, currentY);
+      doc.text("Financial Summary:", leftX, currentY);
       doc.setFont("helvetica", "normal");
       currentY += 10;
 
       const pending = Math.round(Number(order.total_amount)) - Math.round(Number(order.paid_amount));
+      row("Total Bill:",      `Rs. ${Math.round(Number(order.total_amount)).toLocaleString('en-IN')}`);
+      row("Amount Paid:",     `Rs. ${Math.round(Number(order.paid_amount)).toLocaleString('en-IN')}`);
+      row("Pending Balance:", `Rs. ${Math.max(0, pending).toLocaleString('en-IN')}`);
+      currentY += 5;
 
-      doc.text("Total Bill:", 35, currentY); doc.text(`Rs. ${Math.round(Number(order.total_amount)).toLocaleString('en-IN')}`, 140, currentY);
-      currentY += 8;
-      doc.text("Amount Paid:", 35, currentY); doc.text(`Rs. ${Math.round(Number(order.paid_amount)).toLocaleString('en-IN')}`, 140, currentY);
-      currentY += 8;
-      doc.text("Pending Balance:", 35, currentY); doc.text(`Rs. ${Math.max(0, pending).toLocaleString('en-IN')}`, 140, currentY);
-      currentY += 19;
-
-      // Footer
+      // ── Footer — locked to bottom of final page ───────────────────────
       doc.setFontSize(10);
       doc.setFont("helvetica", "italic");
-      doc.text("Thank you for buying bricks", 105, currentY, { align: "center" });
-      doc.text("Happy Construction", 105, currentY + 7, { align: "center" });
+      doc.text("Thank you for buying bricks", 105, 275, { align: "center" });
+      doc.text("Happy Construction",          105, 282, { align: "center" });
+
+      // ── Universal page numbers ────────────────────────────────────────
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Page ${i} of ${pageCount}`, 195, 285, { align: "right" });
+      }
 
       if (action === 'preview') {
         const pdfBlob = doc.output('blob');
