@@ -27,3 +27,5 @@ backend/batta.db
 .DS_Store
 Thumbs.db
 EOF
+.gemini/
+gha-creds-*.json
