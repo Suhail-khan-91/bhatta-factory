@@ -38,7 +38,7 @@ export default function DispatchManager({ orderToManage, onBack }) {
   const handleRecordPayment = async () => {
     const payload = {
       order_id: selectedOrder.id,
-      amount_received: parseFloat(paymentInput.amount || 0),
+      amount_received: Math.round(Number(paymentInput.amount || 0)),
       payment_method: paymentInput.method,
       received_by: "Master",
       timestamp: new Date().toISOString(),
@@ -48,7 +48,7 @@ export default function DispatchManager({ orderToManage, onBack }) {
       setIsLoading(true);
       await recordPayment(selectedOrder.id, payload);
       setModalConfig({ isOpen: true, type: 'success', title: 'Success', message: 'Payment recorded successfully!' });
-      setSelectedOrder((p) => ({ ...p, paid_amount: Number(p.paid_amount) + payload.amount_received }));
+      setSelectedOrder((p) => ({ ...p, paid_amount: Math.round(Number(p.paid_amount) + payload.amount_received) }));
       setPaymentInput({ amount: "", method: "Cash" });
     } catch (err) {
       setModalConfig({ isOpen: true, type: 'danger', title: 'Error', message: 'Failed to record payment: ' + err.message });
@@ -121,8 +121,8 @@ export default function DispatchManager({ orderToManage, onBack }) {
               <p className="text-gray-300 text-sm mb-2"><span className="text-gray-500">Ordered:</span> {orderedQty} {labelQty}</p>
               <p className="text-gray-300 text-sm mb-2"><span className="text-gray-500">Delivered:</span> {deliveredQty} {labelQty}</p>
               <div className="h-px w-full bg-gray-700 my-3"></div>
-              <p className="text-gray-300 text-sm mb-2"><span className="text-gray-500">Total Bill:</span> ₹{Number(selectedOrder.total_amount).toLocaleString("en-IN")}</p>
-              <p className="text-emerald-400 text-sm"><span className="text-gray-500">Paid Amount:</span> ₹{Number(selectedOrder.paid_amount).toLocaleString("en-IN")}</p>
+              <p className="text-gray-300 text-sm mb-2"><span className="text-gray-500">Total Bill:</span> ₹{Math.round(Number(selectedOrder.total_amount)).toLocaleString("en-IN")}</p>
+              <p className="text-emerald-400 text-sm"><span className="text-gray-500">Paid Amount:</span> ₹{Math.round(Number(selectedOrder.paid_amount)).toLocaleString("en-IN")}</p>
             </div>
           </div>
 
@@ -156,7 +156,7 @@ export default function DispatchManager({ orderToManage, onBack }) {
     );
   }
 
-  const pendingBalance = Number(selectedOrder.total_amount) - Number(selectedOrder.paid_amount);
+  const pendingBalance = Math.round(Number(selectedOrder.total_amount) - Number(selectedOrder.paid_amount));
   const isTrawli = selectedOrder.order_mode === "trawli";
   const remainingQty = selectedOrder.total_qty - selectedOrder.dispatched_qty;
   const labelQty = isTrawli ? "Trawlis" : "Bricks";
@@ -183,7 +183,7 @@ export default function DispatchManager({ orderToManage, onBack }) {
             {[
               { label: `Total ${labelQty}`, value: selectedOrder.total_qty, color: "text-white" },
               { label: "Remaining", value: remainingQty, color: remainingQty > 0 ? "text-orange-400" : "text-emerald-400" },
-              { label: "Total Bill", value: `₹${Number(selectedOrder.total_amount).toLocaleString("en-IN")}`, color: "text-white" },
+              { label: "Total Bill", value: `₹${Math.round(Number(selectedOrder.total_amount)).toLocaleString("en-IN")}`, color: "text-white" },
               { label: "Pending Balance", value: `₹${Math.max(0, pendingBalance).toLocaleString("en-IN")}`, color: pendingBalance > 0 ? "text-red-400" : "text-emerald-400" },
             ].map(({ label, value, color }) => (
               <div key={label} className="bg-gray-900/60 rounded-xl px-3 py-3">

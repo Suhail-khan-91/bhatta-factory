@@ -43,8 +43,7 @@ def create_order_payment(id: int, schema: schemas.OrderPaymentCreate, db: Sessio
     
     order = crud.get_sales_order(db, id)
     if order:
-        total_paid = db.query(func.sum(models.OrderPayment.amount_received)).filter(models.OrderPayment.order_id == id).scalar() or 0
-        order.paid_amount = total_paid
+        order.paid_amount = round(float(order.paid_amount or 0) + float(schema.amount_received))
         
         if order.paid_amount >= order.total_amount and order.dispatched_qty >= order.total_qty:
             order.status = models.OrderStatus.Completed

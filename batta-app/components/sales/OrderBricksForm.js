@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { ArrowLeft, ShoppingCart, User, ClipboardList, IndianRupee, CheckCircle2 } from "lucide-react";
 import Combobox from "@/components/ui/Combobox";
 import ConfirmModal from "@/components/ui/ConfirmModal";
-import { createOrder, getAllSettings, getSettings } from "@/lib/api";
+import { createOrder, getAllSettings, getSettings, getOrders } from "@/lib/api";
+import { jsPDF } from "jspdf";
 
 const today = new Date().toISOString().split("T")[0];
 
@@ -31,6 +32,8 @@ const sel = "w-full bg-gray-900/80 border border-gray-700 rounded-xl px-4 py-3 t
 
 export default function OrderBricksForm({ onBack }) {
   const [modalConfig, setModalConfig] = useState({ isOpen: false, type: 'info', title: '', message: '' });
+  const [activeTab, setActiveTab] = useState('new_order');
+  const [orders, setOrders] = useState([]);
   const [settings, setSettings] = useState({
     lead_sources: [],
     salespersons: [],
@@ -40,6 +43,8 @@ export default function OrderBricksForm({ onBack }) {
   const [pricePerTrawli, setPricePerTrawli] = useState(14000);
 
   useEffect(() => {
+    getOrders().then(setOrders).catch(console.error);
+
     getAllSettings()
       .then(data => {
         const settingsMap = {};
@@ -127,6 +132,69 @@ export default function OrderBricksForm({ onBack }) {
     }
   };
 
+  const generateInvoice = (order) => {
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(22);
+    doc.setFont("helvetica", "bold");
+    doc.text("SK BRICKS", 105, 20, { align: "center" });
+    
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    doc.text("Owner: Akbar Ali Khan (Pardhan)", 105, 30, { align: "center" });
+    doc.text("Mobile No: 9984850786 / 9369218372", 105, 38, { align: "center" });
+    doc.text("Address: Daldi, Bhadni Chafa UP", 105, 46, { align: "center" });
+    
+    // Horizontal Line
+    doc.line(15, 52, 195, 52);
+    
+    // Customer Info
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("Customer Details:", 15, 65);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Name: ${order.customer_name}`, 15, 75);
+    doc.text(`Mobile: ${order.customer_mobile || 'N/A'}`, 15, 83);
+    doc.text(`Address: ${order.customer_address || 'N/A'}`, 15, 91);
+    doc.text(`Date: ${order.order_date}`, 140, 65);
+    
+    // Horizontal Line
+    doc.line(15, 98, 195, 98);
+    
+    // Order Info
+    doc.setFont("helvetica", "bold");
+    doc.text("Order Details:", 15, 110);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Brick Type: ${order.brick_category}`, 15, 120);
+    const qtyText = order.order_mode === 'trawli' ? `${order.total_qty} Trawli(s)` : `${order.total_qty} Bricks`;
+    doc.text(`Quantity: ${qtyText}`, 15, 128);
+    if (order.order_mode === 'trawli') {
+      doc.text(`Rate per Trawli: Rs. ${order.price_per_trawli}`, 15, 136);
+    }
+    
+    // Horizontal Line
+    doc.line(15, 145, 195, 145);
+    
+    // Financials
+    doc.setFont("helvetica", "bold");
+    doc.text("Financial Summary:", 15, 158);
+    doc.setFont("helvetica", "normal");
+    
+    const pending = Math.round(Number(order.total_amount)) - Math.round(Number(order.paid_amount));
+    
+    doc.text(`Total Bill: Rs. ${Math.round(Number(order.total_amount)).toLocaleString('en-IN')}`, 15, 168);
+    doc.text(`Amount Paid: Rs. ${Math.round(Number(order.paid_amount)).toLocaleString('en-IN')}`, 15, 176);
+    doc.text(`Pending Balance: Rs. ${Math.max(0, pending).toLocaleString('en-IN')}`, 15, 184);
+    
+    // Footer
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "italic");
+    doc.text("Thank you for your business!", 105, 210, { align: "center" });
+    
+    doc.save(`SK_Bricks_Bill_${order.customer_name}.pdf`);
+  };
+
   if (submitted) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-6 bg-gray-900">
@@ -148,8 +216,26 @@ export default function OrderBricksForm({ onBack }) {
         </div>
       </div>
 
+      {/* TABS */}
+      <div className="flex p-1 bg-gray-800/50 mx-4 mt-4 rounded-xl border border-gray-700">
+        <button
+          onClick={() => setActiveTab('new_order')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'new_order' ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20' : 'text-gray-400 hover:text-gray-200'}`}
+        >
+          New Order
+        </button>
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'history' ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20' : 'text-gray-400 hover:text-gray-200'}`}
+        >
+          Order History
+        </button>
+      </div>
+
       <div className="flex-1 px-4 py-4 pb-8 overflow-y-auto">
-        <SECTION icon={User} title="Customer Details" accent="from-sky-600/80 to-blue-700/80">
+        {activeTab === 'new_order' && (
+          <>
+            <SECTION icon={User} title="Customer Details" accent="from-sky-600/80 to-blue-700/80">
           <Field label="Customer Name">
             <input type="text" placeholder="Full name" value={form.customerName} onChange={set("customerName")} className={inp} />
           </Field>
@@ -258,6 +344,44 @@ export default function OrderBricksForm({ onBack }) {
         >
           {isLoading ? "Saving..." : "🧱 Create Order"}
         </button>
+          </>
+        )}
+
+        {activeTab === 'history' && (
+          <div className="space-y-4">
+            {orders.length === 0 ? (
+              <p className="text-center text-gray-500 py-10">No orders found.</p>
+            ) : (
+              orders.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)).map(order => {
+                const pending = Math.round(Number(order.total_amount)) - Math.round(Number(order.paid_amount));
+                return (
+                  <div key={order.id} className="bg-gray-800 border border-gray-700 rounded-2xl p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h3 className="font-bold text-white text-lg">{order.customer_name}</h3>
+                        <p className="text-gray-400 text-xs">{new Date(order.order_date).toLocaleDateString()}</p>
+                      </div>
+                      <span className="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-1 rounded-full font-semibold">
+                        ₹{Math.round(Number(order.total_amount)).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center mt-4">
+                      <p className="text-sm text-gray-300">
+                        Pending: <span className="text-orange-400 font-bold">₹{Math.max(0, pending).toLocaleString('en-IN')}</span>
+                      </p>
+                      <button 
+                        onClick={() => generateInvoice(order)}
+                        className="bg-gray-700 hover:bg-gray-600 text-white text-xs font-bold py-2 px-3 rounded-lg flex items-center gap-1 transition-colors"
+                      >
+                        Download Bill 📄
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
       </div>
 
       <ConfirmModal 
