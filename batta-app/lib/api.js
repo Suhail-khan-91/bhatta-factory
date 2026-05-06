@@ -82,8 +82,3 @@ export const clearCalculatorHistory = async () => fetchAPI("/api/v1/calculator/h
 // ANALYTICS
 export const getFuelSummary = async () => fetchAPI("/api/v1/fuel/summary");
 export const getAnalyticsSummary = async () => fetchAPI("/api/v1/analytics/summary");
-export const fetchDashboardAnalytics = async () => fetchAPI("/api/v1/analytics/dashboard");
-export const fetchFuelStats = async () => fetchAPI("/api/v1/fuel/summary");
-export const fetchBricksStats = async () => fetchAPI("/api/v1/daily_production/summary");
-export const fetchPayrollStats = async () => fetchAPI("/api/v1/payroll/summary");
-export const fetchSalesStats = async () => fetchAPI("/api/v1/sales/summary");

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { fetchDashboardAnalytics, fetchFuelStats, fetchBricksStats, fetchPayrollStats, fetchSalesStats } from "../../lib/api";
+import { getFuelSummary, getDailyProductions, getEmployees, getOrders, getPayrollLedger } from "../../lib/api";
 import FuelAnalyticsDashboard from "../../components/analytics/FuelAnalyticsDashboard";
 import ProductionAnalyticsDashboard from "../../components/analytics/ProductionAnalyticsDashboard";
 import HistoryStatsDashboard from "../../components/payroll/HistoryStatsDashboard";
@@ -30,31 +30,60 @@ export default function AnalyticsDashboard() {
       setLoading(true);
 
       try {
-        const dashRes = await fetchDashboardAnalytics();
-        if (dashRes) setData(dashRes);
-      } catch (error) { console.error("Failed to load dashboard analytics:", error); }
+        const [fuelRes, prodRes, empRes, ordersRes] = await Promise.allSettled([
+          getFuelSummary().catch(() => ({})),
+          getDailyProductions().catch(() => []),
+          getEmployees().catch(() => []),
+          getOrders().catch(() => [])
+        ]);
 
-      try {
-        const fuelRes = await fetchFuelStats();
-        if (fuelRes) setFuelStats(fuelRes);
-      } catch (error) { console.error("Failed to load fuel stats:", error); }
+        // 1. Fuel (Using the working summary route)
+        if (fuelRes.status === 'fulfilled' && fuelRes.value) {
+          setFuelStats({
+            current_stock: fuelRes.value.current_stock || 0,
+            total_consumed: fuelRes.value.total_consumed || 0
+          });
+        }
 
-      try {
-        const bricksRes = await fetchBricksStats();
-        if (bricksRes) setBricksStats(bricksRes);
-      } catch (error) { console.error("Failed to load bricks stats:", error); }
+        // 2. Bricks (Summing raw production data)
+        if (prodRes.status === 'fulfilled' && Array.isArray(prodRes.value)) {
+          const totalBricks = prodRes.value.reduce((sum, item) => sum + (item.bricks_count || 0), 0);
+          setBricksStats({ today: totalBricks, week: totalBricks, month: totalBricks }); 
+        }
 
-      try {
-        const payrollRes = await fetchPayrollStats();
-        if (payrollRes) setPayrollStats(payrollRes);
-      } catch (error) { console.error("Failed to load payroll stats:", error); }
+        // 3. Payroll (Summing from employee data & ledgers)
+        if (empRes.status === 'fulfilled' && Array.isArray(empRes.value)) {
+          const totalAdvances = empRes.value.reduce((sum, emp) => sum + (emp.advance_balance || 0), 0);
+          const totalPending = empRes.value.reduce((sum, emp) => sum + (emp.pending_dues || 0), 0);
+          
+          const ledgerPromises = empRes.value.map(emp => getPayrollLedger(emp.id).catch(() => []));
+          const allLedgers = await Promise.all(ledgerPromises);
+          
+          let totalPaid = 0;
+          allLedgers.forEach(empLedger => {
+            if (Array.isArray(empLedger)) {
+              totalPaid += empLedger.reduce((sum, l) => sum + Number(l.amount || 0), 0);
+            }
+          });
 
-      try {
-        const salesRes = await fetchSalesStats();
-        if (salesRes) setSalesStats(salesRes);
-      } catch (error) { console.error("Failed to load sales stats:", error); }
+          setPayrollStats({ total_paid: totalPaid, total_advances: totalAdvances, total_pending: totalPending });
+        }
 
-      setLoading(false);
+        // 4. Sales & God Mode (Summing from orders data)
+        if (ordersRes.status === 'fulfilled' && Array.isArray(ordersRes.value)) {
+          const revenue = ordersRes.value.reduce((sum, order) => sum + (order.total_amount || 0), 0);
+          const active = ordersRes.value.filter(o => o.status === 'Pending' || o.status === 'Active').length;
+          
+          setSalesStats({ total_revenue: revenue, total_orders: ordersRes.value.length, active_orders: active });
+          
+          // Set God Mode Data
+          setData({ total_revenue: revenue, net_profit: revenue - (fuelRes.value?.total_consumed || 0 * 80) }); // basic profit est
+        }
+      } catch (error) {
+        console.error("Dashboard calculation error:", error);
+      } finally {
+        setLoading(false);
+      }
     }
     loadData();
   }, []);
@@ -81,9 +110,9 @@ export default function AnalyticsDashboard() {
       tag: "Live Data",
       tagColor: "bg-blue-500/20 text-blue-300",
       stats: [
-        { label: "Current Slot", value: isLoading ? "—" : `${fuelStats.current_stock}L` },
-        { label: "Used", value: isLoading ? "—" : `${fuelStats.total_consumed}L` },
-        { label: "Remaining", value: isLoading ? "—" : `${fuelStats.current_stock}L` },
+        { label: "Current Slot", value: isLoading ? "—" : `${fuelStats?.current_stock || 0}L` },
+        { label: "Used", value: isLoading ? "—" : `${fuelStats?.total_consumed || 0}L` },
+        { label: "Remaining", value: isLoading ? "—" : `${fuelStats?.current_stock || 0}L` },
       ],
     },
     {
@@ -96,9 +125,9 @@ export default function AnalyticsDashboard() {
       tag: "Bricks Count",
       tagColor: "bg-emerald-500/20 text-emerald-300",
       stats: [
-        { label: "Today", value: isLoading ? "—" : formatK(bricksStats.today) },
-        { label: "This Week", value: isLoading ? "—" : formatK(bricksStats.week) },
-        { label: "This Month", value: isLoading ? "—" : formatK(bricksStats.month) },
+        { label: "Today", value: isLoading ? "—" : formatK(bricksStats?.today || 0) },
+        { label: "This Week", value: isLoading ? "—" : formatK(bricksStats?.week || 0) },
+        { label: "This Month", value: isLoading ? "—" : formatK(bricksStats?.month || 0) },
       ],
     },
     {
@@ -111,9 +140,9 @@ export default function AnalyticsDashboard() {
       tag: "Payroll",
       tagColor: "bg-amber-500/20 text-amber-300",
       stats: [
-        { label: "Paid", value: isLoading ? "—" : `₹${formatK(payrollStats.total_paid)}` },
-        { label: "Advances", value: isLoading ? "—" : `₹${formatK(payrollStats.total_advances)}` },
-        { label: "Pending", value: isLoading ? "—" : `₹${formatK(payrollStats.total_pending)}` },
+        { label: "Paid", value: isLoading ? "—" : `₹${formatK(payrollStats?.total_paid || 0)}` },
+        { label: "Advances", value: isLoading ? "—" : `₹${formatK(payrollStats?.total_advances || 0)}` },
+        { label: "Pending", value: isLoading ? "—" : `₹${formatK(payrollStats?.total_pending || 0)}` },
       ],
     },
     {
@@ -126,9 +155,9 @@ export default function AnalyticsDashboard() {
       tag: "Sales",
       tagColor: "bg-rose-500/20 text-rose-300",
       stats: [
-        { label: "Revenue", value: isLoading ? "—" : `₹${formatK(salesStats.total_revenue)}` },
-        { label: "Orders", value: isLoading ? "—" : salesStats.total_orders },
-        { label: "Active", value: isLoading ? "—" : salesStats.active_orders },
+        { label: "Revenue", value: isLoading ? "—" : `₹${formatK(salesStats?.total_revenue || 0)}` },
+        { label: "Orders", value: isLoading ? "—" : (salesStats?.total_orders || 0) },
+        { label: "Active", value: isLoading ? "—" : (salesStats?.active_orders || 0) },
       ],
     },
     {
@@ -141,8 +170,8 @@ export default function AnalyticsDashboard() {
       tag: "Financials",
       tagColor: "bg-violet-500/20 text-violet-300",
       stats: [
-        { label: "Revenue", value: isLoading ? "—" : `₹${formatK(data.total_revenue)}` },
-        { label: "Profit", value: isLoading ? "—" : `₹${formatK(data.net_profit)}` },
+        { label: "Revenue", value: isLoading ? "—" : `₹${formatK(data?.total_revenue || 0)}` },
+        { label: "Profit", value: isLoading ? "—" : `₹${formatK(data?.net_profit || 0)}` },
       ],
     },
   ];
@@ -216,7 +245,8 @@ export default function AnalyticsDashboard() {
     const totalExpenses = data.total_payroll + data.total_fuel_cost;
     const payrollRatio = totalExpenses > 0 ? (data.total_payroll / totalExpenses) * 100 : 0;
     const fuelRatio = totalExpenses > 0 ? (data.total_fuel_cost / totalExpenses) * 100 : 0;
-    const maxDriverCount = data.top_drivers.length > 0 ? Math.max(...data.top_drivers.map(d => d.count)) : 1;
+    const drivers = data?.top_drivers || [];
+    const maxDriverCount = drivers.length > 0 ? Math.max(...drivers.map(d => d.count)) : 1;
 
     return (
       <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-900 text-white">
@@ -293,9 +323,9 @@ export default function AnalyticsDashboard() {
           <div className="bg-gray-800 rounded-2xl shadow-md border border-gray-700 p-6">
             <h3 className="text-xl font-bold text-gray-100 mb-6">Top Dispatch Drivers</h3>
             
-            {data.top_drivers && data.top_drivers.length > 0 ? (
+            {(data?.top_drivers || []).length > 0 ? (
               <div className="space-y-5">
-                {data.top_drivers.map((driver, index) => (
+                {(data?.top_drivers || []).map((driver, index) => (
                   <div key={index} className="relative w-full">
                     <div className="flex justify-between items-end mb-1 z-10 relative px-1">
                       <span className="font-semibold text-gray-200">{driver.name}</span>
