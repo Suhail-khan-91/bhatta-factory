@@ -34,8 +34,16 @@ const NAV_ITEMS = [
   },
 ];
 
+// Fire a window-level event so page.js can open its login modal
+function fireLoginEvent() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("batta:openLogin"));
+  }
+}
+
 export default function BottomNavBar() {
   const pathname = usePathname();
+  const isHome = pathname === "/";
   const [showMenu, setShowMenu] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
 
@@ -47,7 +55,13 @@ export default function BottomNavBar() {
       {!showAdmin && (
         <div className="fixed top-4 right-4 z-50">
           <button 
-            onClick={() => setShowMenu(!showMenu)} 
+            onClick={() => {
+              if (isHome) {
+                fireLoginEvent();
+              } else {
+                setShowMenu(!showMenu);
+              }
+            }} 
             className="p-2 bg-gray-800 rounded-full text-white shadow-lg border border-gray-700 active:scale-95 transition-all"
           >
             <MoreVertical size={20} />
@@ -81,6 +95,7 @@ export default function BottomNavBar() {
               <li key={href} className="flex-1">
                 <Link
                   href={href}
+                  onClick={isHome ? (e) => { e.preventDefault(); fireLoginEvent(); } : undefined}
                   className="
                     flex flex-col items-center justify-center gap-1
                     h-full w-full
