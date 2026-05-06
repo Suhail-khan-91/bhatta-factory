@@ -140,65 +140,113 @@ export default function OrderBricksForm({ onBack }) {
     }
   };
 
-  const generateInvoice = (order) => {
+  const generateInvoice = async (order) => {
     const doc = new jsPDF();
     
+    // Watermark
+    await new Promise((resolve) => {
+      const img = new Image();
+      img.src = '/images/sk-bricks.jpg';
+      img.onload = () => {
+        doc.setGState(new doc.GState({opacity: 0.30}));
+        doc.addImage(img, 'JPEG', 0, 0, 210, 297);
+        doc.setGState(new doc.GState({opacity: 1.0}));
+        resolve();
+      };
+      img.onerror = resolve;
+    });
+    
     // Header
-    doc.setFontSize(22);
+    doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text("SK BRICKS", 105, 20, { align: "center" });
+    doc.text("RECEIPT / BILL", 105, 15, { align: "center" });
+    
+    doc.setLineDash([2, 2], 0);
+    doc.line(20, 18, 190, 18);
+    doc.setLineDash([]);
+    
+    let currentY = 18;
+    currentY += 8; // Small Y-offset for vertical breathing room
+    
+    doc.setFontSize(24);
+    doc.text("SK BRICKS", 105, currentY + 7, { align: "center" });
+    currentY += 17;
     
     doc.setFontSize(12);
     doc.setFont("helvetica", "normal");
-    doc.text("Owner: Akbar Ali Khan (Pardhan)", 105, 30, { align: "center" });
-    doc.text("Mobile No: 9984850786 / 9369218372", 105, 38, { align: "center" });
-    doc.text("Address: Daldi, Bhadni Chafa UP", 105, 46, { align: "center" });
+    doc.text("Owner: Akbar Ali Khan (Pardhan)", 105, currentY, { align: "center" });
+    currentY += 8;
+    doc.text("Mobile No: 9984850786 / 9369218372", 105, currentY, { align: "center" });
+    currentY += 8;
+    doc.text("Address: Daldi, Bhadni Chafa UP", 105, currentY, { align: "center" });
+    currentY += 6;
     
     // Horizontal Line
-    doc.line(15, 52, 195, 52);
+    doc.line(15, currentY, 195, currentY);
+    currentY += 11;
     
     // Customer Info
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.text("Customer Details:", 15, 65);
+    doc.text("Customer Details:", 35, currentY);
     doc.setFont("helvetica", "normal");
-    doc.text(`Name: ${order.customer_name}`, 15, 75);
-    doc.text(`Mobile: ${order.customer_mobile || 'N/A'}`, 15, 83);
-    doc.text(`Address: ${order.customer_address || 'N/A'}`, 15, 91);
-    doc.text(`Date: ${order.order_date}`, 140, 65);
+    currentY += 10;
+    doc.text("Name:", 35, currentY); doc.text(order.customer_name || 'N/A', 140, currentY);
+    currentY += 8;
+    doc.text("Mobile:", 35, currentY); doc.text(order.customer_mobile || 'N/A', 140, currentY);
+    currentY += 8;
+    doc.text("Address:", 35, currentY); doc.text(order.customer_address || 'N/A', 140, currentY);
+    currentY += 8;
+    doc.text("Date:", 35, currentY); doc.text(order.order_date || 'N/A', 140, currentY);
+    currentY += 6;
     
     // Horizontal Line
-    doc.line(15, 98, 195, 98);
+    doc.line(15, currentY, 195, currentY);
+    currentY += 12;
     
     // Order Info
     doc.setFont("helvetica", "bold");
-    doc.text("Order Details:", 15, 110);
+    doc.text("Order Details:", 35, currentY);
     doc.setFont("helvetica", "normal");
-    doc.text(`Brick Type: ${order.brick_category}`, 15, 120);
+    currentY += 10;
+    doc.text("Brick Type:", 35, currentY); doc.text(order.brick_category || 'N/A', 140, currentY);
+    currentY += 8;
+    
     const qtyText = order.order_mode === 'trawli' ? `${order.total_qty} Trawli(s)` : `${order.total_qty} Bricks`;
-    doc.text(`Quantity: ${qtyText}`, 15, 128);
+    doc.text("Quantity:", 35, currentY); doc.text(qtyText, 140, currentY);
+    currentY += 8;
+    
     if (order.order_mode === 'trawli') {
-      doc.text(`Rate per Trawli: Rs. ${order.price_per_trawli}`, 15, 136);
+      doc.text("Fixed Trawli Rate:", 35, currentY); doc.text(`Rs. ${Number(pricePerTrawli).toLocaleString('en-IN')}`, 140, currentY);
+      currentY += 8;
+      doc.text("Sold Trawli Rate:", 35, currentY); doc.text(`Rs. ${Number(order.price_per_trawli).toLocaleString('en-IN')}`, 140, currentY);
+      currentY += 8;
     }
     
     // Horizontal Line
-    doc.line(15, 145, 195, 145);
+    doc.line(15, currentY + 2, 195, currentY + 2);
+    currentY += 15;
     
     // Financials
     doc.setFont("helvetica", "bold");
-    doc.text("Financial Summary:", 15, 158);
+    doc.text("Financial Summary:", 35, currentY);
     doc.setFont("helvetica", "normal");
+    currentY += 10;
     
     const pending = Math.round(Number(order.total_amount)) - Math.round(Number(order.paid_amount));
     
-    doc.text(`Total Bill: Rs. ${Math.round(Number(order.total_amount)).toLocaleString('en-IN')}`, 15, 168);
-    doc.text(`Amount Paid: Rs. ${Math.round(Number(order.paid_amount)).toLocaleString('en-IN')}`, 15, 176);
-    doc.text(`Pending Balance: Rs. ${Math.max(0, pending).toLocaleString('en-IN')}`, 15, 184);
+    doc.text("Total Bill:", 35, currentY); doc.text(`Rs. ${Math.round(Number(order.total_amount)).toLocaleString('en-IN')}`, 140, currentY);
+    currentY += 8;
+    doc.text("Amount Paid:", 35, currentY); doc.text(`Rs. ${Math.round(Number(order.paid_amount)).toLocaleString('en-IN')}`, 140, currentY);
+    currentY += 8;
+    doc.text("Pending Balance:", 35, currentY); doc.text(`Rs. ${Math.max(0, pending).toLocaleString('en-IN')}`, 140, currentY);
+    currentY += 19;
     
     // Footer
     doc.setFontSize(10);
     doc.setFont("helvetica", "italic");
-    doc.text("Thank you for your business!", 105, 210, { align: "center" });
+    doc.text("Thank you for buying bricks", 105, currentY, { align: "center" });
+    doc.text("Happy Construction", 105, currentY + 7, { align: "center" });
     
     doc.save(`SK_Bricks_Bill_${order.customer_name}.pdf`);
   };
