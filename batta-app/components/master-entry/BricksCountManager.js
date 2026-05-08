@@ -6,6 +6,7 @@ import {
   Clock, ChevronRight, Plus, Trash2,
 } from "lucide-react";
 import { getBrickTeams, createBrickTeam, createDailyProduction, getDailyProductions, deleteDailyProduction } from "@/lib/api";
+import TabSwitcher from "@/components/ui/TabSwitcher";
 
 // ── Location colour mapping ───────────────────────────────────────────────────
 const LOCATION_COLORS = {
@@ -407,21 +408,15 @@ function TeamEntryForm({ team, history, onBack, onDeleteTeam, onEntryCreated, on
           </button>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="flex">
-          <button 
-            onClick={() => setActiveTab('form')} 
-            className={`flex-1 py-3 text-sm font-semibold transition-all border-b-2 ${activeTab === 'form' ? 'text-emerald-400 border-emerald-400 bg-emerald-400/10' : 'text-gray-500 border-transparent hover:bg-gray-800'}`}
-          >
-            Log Production
-          </button>
-          <button 
-            onClick={() => setActiveTab('history')} 
-            className={`flex-1 py-3 text-sm font-semibold transition-all border-b-2 ${activeTab === 'history' ? 'text-emerald-400 border-emerald-400 bg-emerald-400/10' : 'text-gray-500 border-transparent hover:bg-gray-800'}`}
-          >
-            Recent History
-          </button>
-        </div>
+        <TabSwitcher
+          tabs={[
+            { key: 'form', label: 'Log Production' },
+            { key: 'history', label: 'Recent History' }
+          ]}
+          activeTab={activeTab}
+          onChange={setActiveTab}
+          accentColor="emerald-400"
+        />
       </div>
 
       <div className="flex-1 overflow-y-auto">

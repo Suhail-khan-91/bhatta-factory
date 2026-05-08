@@ -1,83 +1,15 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { ArrowLeft, UserPlus, Upload, X, CheckCircle2, ChevronDown } from "lucide-react";
 import { createEmployee } from "@/lib/api";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import Combobox from "@/components/ui/Combobox";
 
 const CATEGORIES   = ["Jhokwa", "Driver", "Bharae wala", "Coal picker", "Rabbis spreader", "General"];
 const GENDERS      = ["Male", "Female", "Other"];
 const RELIGIONS    = ["Muslim", "Hindu", "Sikh", "Christian", "Other"];
 const CONTRACTORS  = ["Master", "Pardhan", "Uncle", "Bade Abbu"];
-
-// ── Reusable Combobox ─────────────────────────────────────────────────────────
-function Combobox({ id, value, onChange, options, placeholder, accent = "focus:ring-purple-500/40 focus:border-purple-500" }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef(null);
-
-  useEffect(() => {
-    const handler = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target))
-        setIsOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    document.addEventListener("touchstart", handler);
-    return () => {
-      document.removeEventListener("mousedown", handler);
-      document.removeEventListener("touchstart", handler);
-    };
-  }, []);
-
-  const select = (option) => { onChange(option); setIsOpen(false); };
-
-  return (
-    <div ref={containerRef} className="relative">
-      <input
-        id={id}
-        type="text"
-        value={value}
-        placeholder={placeholder}
-        onChange={(e) => onChange(e.target.value)}
-        onFocus={() => setIsOpen(true)}
-        autoComplete="off"
-        className={`
-          w-full bg-gray-800 border border-gray-700 rounded-xl
-          pl-4 pr-10 py-3 text-white text-base
-          focus:outline-none focus:ring-2 transition-all appearance-none
-          ${accent}
-        `}
-      />
-      <button
-        type="button"
-        onPointerDown={(e) => { e.preventDefault(); setIsOpen((v) => !v); }}
-        tabIndex={-1}
-        className="absolute right-0 top-0 h-full px-3 flex items-center text-gray-400 hover:text-white transition-colors"
-        aria-label="Toggle dropdown"
-      >
-        <ChevronDown size={16} className={`transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
-      </button>
-
-      {isOpen && (
-        <ul className="absolute left-0 right-0 top-[calc(100%+4px)] z-50 bg-gray-800 border border-gray-700 rounded-xl overflow-hidden shadow-xl shadow-black/40">
-          {options.map((opt) => (
-            <li key={opt}>
-              <button
-                type="button"
-                onPointerDown={(e) => { e.preventDefault(); select(opt); }}
-                className={`w-full text-left px-4 py-3 text-base transition-colors
-                  ${value === opt
-                    ? "bg-purple-500/20 text-purple-300 font-medium"
-                    : "text-gray-200 hover:bg-gray-700 active:bg-gray-600"}`}
-              >
-                {opt}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
 
 // ── Select wrapper ────────────────────────────────────────────────────────────
 function StyledSelect({ id, value, onChange, children }) {
@@ -265,6 +197,7 @@ export default function EmployeeOnboarding({ onBack }) {
             onChange={(v) => set("employee_category", v)}
             options={CATEGORIES}
             placeholder="Select or type a category"
+            accentClass="focus:ring-purple-500/40 focus:border-purple-500"
           />
           {errors.employee_category && <p className="text-red-400 text-xs mt-1">{errors.employee_category}</p>}
         </div>
@@ -300,6 +233,7 @@ export default function EmployeeOnboarding({ onBack }) {
             onChange={(v) => set("boss_contractor_name", v)}
             options={CONTRACTORS}
             placeholder="Who brought them to the factory?"
+            accentClass="focus:ring-purple-500/40 focus:border-purple-500"
           />
         </div>
 
@@ -326,6 +260,7 @@ export default function EmployeeOnboarding({ onBack }) {
             onChange={(v) => set("gender", v)}
             options={GENDERS}
             placeholder="Select or type"
+            accentClass="focus:ring-purple-500/40 focus:border-purple-500"
           />
         </div>
 
@@ -338,6 +273,7 @@ export default function EmployeeOnboarding({ onBack }) {
             onChange={(v) => set("religion", v)}
             options={RELIGIONS}
             placeholder="Select or type"
+            accentClass="focus:ring-purple-500/40 focus:border-purple-500"
           />
         </div>
 

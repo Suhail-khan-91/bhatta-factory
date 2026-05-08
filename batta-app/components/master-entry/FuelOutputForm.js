@@ -1,107 +1,14 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { ArrowLeft, Activity, CheckCircle2, ChevronDown, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowLeft, Activity, CheckCircle2, Trash2 } from "lucide-react";
 import { createFuelUsage, getSettings, getFuelSummary, getFuelUsages, deleteFuelUsage } from "@/lib/api";
 import ConfirmModal from "../ui/ConfirmModal";
+import Combobox from "@/components/ui/Combobox";
+import TabSwitcher from "@/components/ui/TabSwitcher";
 
 const MACHINES = ["JCB", "Tractor_1", "Tractor_2", "Icer Machine", "Small Green Machine"];
 const GIVERS   = ["Master", "Uncle", "General Worker"];
-
-// ── Reusable Combobox ─────────────────────────────────────────────────────────
-function Combobox({ id, value, onChange, options, placeholder, accentClass = "focus:ring-orange-500/40 focus:border-orange-500" }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef(null);
-
-  useEffect(() => {
-    const handler = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    document.addEventListener("touchstart", handler);
-    return () => {
-      document.removeEventListener("mousedown", handler);
-      document.removeEventListener("touchstart", handler);
-    };
-  }, []);
-
-  const select = (option) => {
-    onChange(option);
-    setIsOpen(false);
-  };
-
-  const inputBase =
-    `w-full bg-gray-800 border rounded-xl pl-4 pr-10 py-3 text-white text-base
-     focus:outline-none focus:ring-2 transition-all appearance-none
-     border-gray-700 ${accentClass}`;
-
-  return (
-    <div ref={containerRef} className="relative">
-      <input
-        id={id}
-        type="text"
-        value={value}
-        placeholder={placeholder}
-        onChange={(e) => onChange(e.target.value)}
-        onFocus={() => setIsOpen(true)}
-        className={inputBase}
-        autoComplete="off"
-      />
-
-      <button
-        type="button"
-        onPointerDown={(e) => {
-          e.preventDefault();
-          setIsOpen((prev) => !prev);
-        }}
-        className="
-          absolute right-0 top-0 h-full px-3
-          flex items-center justify-center
-          text-gray-400 hover:text-white transition-colors
-        "
-        tabIndex={-1}
-        aria-label="Toggle dropdown"
-      >
-        <ChevronDown
-          size={16}
-          className={`transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-        />
-      </button>
-
-      {isOpen && (
-        <ul
-          className="
-            absolute left-0 right-0 top-[calc(100%+4px)] z-50
-            bg-gray-800 border border-gray-700 rounded-xl
-            overflow-hidden shadow-xl shadow-black/40
-          "
-        >
-          {options.map((option) => (
-            <li key={option}>
-              <button
-                type="button"
-                onPointerDown={(e) => {
-                  e.preventDefault();
-                  select(option);
-                }}
-                className={`
-                  w-full text-left px-4 py-3 text-base transition-colors
-                  ${value === option
-                    ? "bg-orange-500/20 text-orange-300 font-medium"
-                    : "text-gray-200 hover:bg-gray-700 active:bg-gray-600"}
-                `}
-              >
-                {option}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
 
 // ── Main Form ─────────────────────────────────────────────────────────────────
 export default function FuelOutputForm({ onBack }) {
@@ -267,20 +174,15 @@ export default function FuelOutputForm({ onBack }) {
             <h1 className="text-lg font-semibold">Fuel Output</h1>
           </div>
         </div>
-        <div className="flex">
-          <button 
-            onClick={() => setActiveTab('form')} 
-            className={`flex-1 py-3 text-sm font-semibold transition-all border-b-2 ${activeTab === 'form' ? 'text-orange-400 border-orange-400 bg-orange-400/10' : 'text-gray-500 border-transparent hover:bg-gray-800'}`}
-          >
-            Log Usage
-          </button>
-          <button 
-            onClick={() => setActiveTab('history')} 
-            className={`flex-1 py-3 text-sm font-semibold transition-all border-b-2 ${activeTab === 'history' ? 'text-orange-400 border-orange-400 bg-orange-400/10' : 'text-gray-500 border-transparent hover:bg-gray-800'}`}
-          >
-            Recent Usage
-          </button>
-        </div>
+        <TabSwitcher
+          tabs={[
+            { key: 'form', label: 'Log Usage' },
+            { key: 'history', label: 'Recent Usage' }
+          ]}
+          activeTab={activeTab}
+          onChange={setActiveTab}
+          accentColor="orange-400"
+        />
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -298,6 +200,7 @@ export default function FuelOutputForm({ onBack }) {
             onChange={(val) => set("machine_name", val)}
             options={machines}
             placeholder="Select or type a machine name"
+            accentClass="focus:ring-orange-500/40 focus:border-orange-500"
           />
         </div>
 
@@ -331,6 +234,7 @@ export default function FuelOutputForm({ onBack }) {
             onChange={(val) => set("given_by", val)}
             options={GIVERS}
             placeholder="Select or type a name"
+            accentClass="focus:ring-orange-500/40 focus:border-orange-500"
           />
         </div>
 

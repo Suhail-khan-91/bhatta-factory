@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { ArrowLeft, Droplets, Fuel, IndianRupee, Activity } from "lucide-react";
 import { getFuelStocks, getFuelUsages } from "@/lib/api";
+import TabSwitcher from "@/components/ui/TabSwitcher";
 
 const TIME_RANGES = ["7D", "1M", "Year"];
 
@@ -82,13 +83,15 @@ export default function FuelAnalyticsDashboard({ onBack }) {
             <p className="text-gray-500 text-xs">Stock, consumption & cost tracking</p>
           </div>
         </div>
-        <div className="flex border-t border-gray-800">
-          {[{ key: "stats", label: "Insights & Stats" }, { key: "history", label: "Usage History" }].map(t => (
-            <button key={t.key} onClick={() => setActiveTab(t.key)} className={`flex-1 py-3 text-sm font-semibold transition-all border-b-2 ${activeTab === t.key ? "text-blue-400 border-blue-400 bg-blue-400/10" : "text-gray-500 border-transparent hover:bg-gray-800"}`}>
-              {t.label}
-            </button>
-          ))}
-        </div>
+        <TabSwitcher
+          tabs={[
+            { key: "stats", label: "Insights & Stats" },
+            { key: "history", label: "Usage History" }
+          ]}
+          activeTab={activeTab}
+          onChange={setActiveTab}
+          accentColor="blue-400"
+        />
       </div>
 
       <div className="flex-1 overflow-y-auto pb-8">

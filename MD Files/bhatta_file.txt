@@ -740,3 +740,15 @@ Right now, anyone who opens `localhost:3000` can click the red Trash Can and del
 ***
 
 Which of these sounds the most exciting to tackle next? Do we want to build the **God Mode Analytics**, make some **PDF Receipts**, or lock it down with a **Login Screen**? You are in the home stretch, bro! 🚀</ConfirmModal>
+
+
+
+*
+*
+*
+*
+*
+
+
+
+

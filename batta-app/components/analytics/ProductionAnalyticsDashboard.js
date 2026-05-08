@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { ArrowLeft, Layers, Trophy, TrendingUp } from "lucide-react";
 import { getBrickTeams, getDailyProductions } from "@/lib/api";
+import TabSwitcher from "@/components/ui/TabSwitcher";
 
 const TIME_RANGES = ["7D", "1M", "Year"];
 
@@ -91,13 +92,15 @@ export default function ProductionAnalyticsDashboard({ onBack }) {
             <p className="text-gray-500 text-xs">Team output & brick count trends</p>
           </div>
         </div>
-        <div className="flex border-t border-gray-800">
-          {[{ key: "stats", label: "Insights & Stats" }, { key: "history", label: "Entry Ledger" }].map(t => (
-            <button key={t.key} onClick={() => setActiveTab(t.key)} className={`flex-1 py-3 text-sm font-semibold transition-all border-b-2 ${activeTab === t.key ? "text-emerald-400 border-emerald-400 bg-emerald-400/10" : "text-gray-500 border-transparent hover:bg-gray-800"}`}>
-              {t.label}
-            </button>
-          ))}
-        </div>
+        <TabSwitcher
+          tabs={[
+            { key: "stats", label: "Insights & Stats" },
+            { key: "history", label: "Entry Ledger" }
+          ]}
+          activeTab={activeTab}
+          onChange={setActiveTab}
+          accentColor="emerald-400"
+        />
       </div>
 
       <div className="flex-1 overflow-y-auto pb-8">

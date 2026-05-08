@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { ArrowLeft, User, Briefcase, CreditCard, Calendar, IndianRupee, Save, CheckCircle2, Trash2, Clock, History, PlusCircle } from "lucide-react";
 import { getEmployees, createAdvancePayment, deletePayrollRecord } from "@/lib/api";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import TabSwitcher from "@/components/ui/TabSwitcher";
 
 const CATEGORIES = ["Jhokwa", "Driver", "Bharae wala", "Coal picker", "General"];
 
@@ -110,23 +111,17 @@ export default function AdvancePaymentForm({ onBack }) {
           <h1 className="text-xl font-bold ml-2">Advanced Payment</h1>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="flex p-1 bg-slate-800/50 mx-4 mb-4 rounded-xl border border-slate-700">
-          <button
-            onClick={() => setActiveTab('form')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'form' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-400 hover:text-slate-200'}`}
-          >
-            <PlusCircle size={16} />
-            Log Entry
-          </button>
-          <button
-            onClick={() => setActiveTab('history')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'history' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-400 hover:text-slate-200'}`}
-          >
-            <History size={16} />
-            Recent History
-          </button>
-        </div>
+        <TabSwitcher
+          variant="pill"
+          tabs={[
+            { key: 'form', label: 'Log Entry', icon: PlusCircle },
+            { key: 'history', label: 'Recent History', icon: History }
+          ]}
+          activeTab={activeTab}
+          onChange={setActiveTab}
+          activeBgColor="bg-blue-600"
+          className="mx-4 mb-4"
+        />
       </div>
 
       <div className="flex-1 overflow-y-auto">

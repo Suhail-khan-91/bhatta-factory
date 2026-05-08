@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { ArrowLeft, ShoppingCart, User, ClipboardList, IndianRupee, CheckCircle2 } from "lucide-react";
 import Combobox from "@/components/ui/Combobox";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import TabSwitcher from "@/components/ui/TabSwitcher";
 import { createOrder, getAllSettings, getSettings, getOrders } from "@/lib/api";
 import { jsPDF } from "jspdf";
 
@@ -334,21 +335,17 @@ export default function OrderBricksForm({ onBack }) {
         </div>
       </div>
 
-      {/* TABS */}
-      <div className="flex p-1 bg-gray-800/50 mx-4 mt-4 rounded-xl border border-gray-700">
-        <button
-          onClick={() => setActiveTab('new_order')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'new_order' ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20' : 'text-gray-400 hover:text-gray-200'}`}
-        >
-          New Order
-        </button>
-        <button
-          onClick={() => setActiveTab('history')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'history' ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20' : 'text-gray-400 hover:text-gray-200'}`}
-        >
-          Order History
-        </button>
-      </div>
+      <TabSwitcher
+          variant="pill"
+          tabs={[
+            { key: 'new_order', label: 'New Order' },
+            { key: 'history', label: 'Order History' }
+          ]}
+          activeTab={activeTab}
+          onChange={setActiveTab}
+          activeBgColor="bg-orange-600"
+          className="mx-4 mt-4"
+        />
 
       <div className="flex-1 px-4 py-4 pb-48 overflow-y-auto">
         {activeTab === 'new_order' && (
